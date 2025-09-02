@@ -1,14 +1,16 @@
 # Letter Banner Generator Web Service
 
-A beautiful web service that creates stylized letter banners where each letter is shaped like objects of your choice. Perfect for creating personalized name banners, educational materials, or decorative prints.
+A beautiful web service that creates stylized letter banners where each letter is inspired by interests and themes of your choice. Each letter is generated with a transparent background, perfect for cutting out and taping together to create personalized banners, educational materials, or decorative prints.
 
 ## 🌟 Features
 
-- **Custom Letter Objects**: Each letter can be shaped like any object (A=Apple, B=Butterfly, etc.)
+- **Interest-Based Letters**: Each letter is inspired by personal interests and themes
+- **Transparent Backgrounds**: Letters generated with transparent backgrounds for easy cutting and assembly
 - **Color Palette Selection**: Choose from curated color palettes or create custom ones
 - **Print-Ready Output**: Generates high-quality 300dpi images optimized for 8.5x11" printing
 - **Multiple Formats**: Individual letters, combined banner layout, and PDF compilation
 - **Real-Time Progress**: Track generation progress as letters are being created
+- **Cost Transparency**: See exactly what each banner costs to generate
 - **Web Interface**: Easy-to-use web UI for non-technical users
 
 ## 🚀 Quick Start

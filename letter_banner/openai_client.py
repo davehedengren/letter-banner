@@ -37,7 +37,7 @@ def generate_stylized_letter(letter, object_description, output_dir, run_timesta
         color_guidance = f" Use this specific color palette: {colors_str}. Style it with {color_palette['mood']}."
     
     # Create prompt for stylized letter based on interest/theme
-    prompt = f"Create a large, bold letter '{letter.upper()}' that is creatively designed and inspired by the interest/theme of {object_description}. The letter should be clearly recognizable as '{letter.upper()}' but artistically decorated with visual elements, symbols, textures, and motifs that represent {object_description}. Make it bold, artistic, and perfect for a decorative banner.{color_guidance} Keep it centered on a clean white background with no other elements. Think about what objects, patterns, or imagery would represent this interest and incorporate them into the letter design."
+    prompt = f"Create a large, bold letter '{letter.upper()}' that is creatively designed and inspired by the interest/theme of {object_description}. The letter should be clearly recognizable as '{letter.upper()}' but artistically decorated with visual elements, symbols, textures, and motifs that represent {object_description}. Make it bold, artistic, and perfect for a decorative banner.{color_guidance} IMPORTANT: Use a completely transparent background - only the letter itself should have color and design elements. The letter should be suitable for cutting out and taping together with other letters to form a banner. No background colors, gradients, or shapes - just the decorated letter on transparent background."
     
     print(f"Prompt: {prompt}")
     

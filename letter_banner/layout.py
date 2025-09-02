@@ -86,7 +86,12 @@ def create_banner_layout(letter_paths, output_dir, run_timestamp, letters_per_ro
             x = start_x + (col * letter_size)
             y = start_y
             
-            banner.paste(letter_resized, (x, y))
+            # Handle transparent images properly
+            if letter_resized.mode in ('RGBA', 'LA') or (letter_resized.mode == 'P' and 'transparency' in letter_resized.info):
+                # Use alpha channel for proper transparency blending
+                banner.paste(letter_resized, (x, y), letter_resized)
+            else:
+                banner.paste(letter_resized, (x, y))
         
         # Save banner
         banner_output_dir = os.path.join(output_dir, f"letter_banner_{run_timestamp}")
