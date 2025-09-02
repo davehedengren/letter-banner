@@ -4,6 +4,7 @@ OpenAI API client for letter banner generation
 
 import os
 import time
+import base64
 from io import BytesIO
 from PIL import Image
 
@@ -68,34 +69,50 @@ def _generate_image_with_retry(prompt, output_dir, letter, object_description, r
             
             print(f"Attempting image generation for letter '{letter.upper()}'...")
             
-            # Use OpenAI image generation (create new image, don't edit)
+            # Use OpenAI image generation with gpt-image-1 model
             response = client.images.generate(
-                model="dall-e-3",
+                model="gpt-image-1",
                 prompt=prompt,
                 n=1,
                 size=config.DEFAULT_IMAGE_SIZE,
-                quality="standard"
+                background="transparent",
+                output_format="png",
+                quality="high"
             )
 
-            if response.data and len(response.data) > 0 and response.data[0].url:
-                # Download image from URL
-                import requests
-                image_url = response.data[0].url
-                print(f"Image URL received for letter '{letter.upper()}'.")
-                
-                image_response = requests.get(image_url)
-                if image_response.status_code == 200:
-                    image_bytes = image_response.content
+            if response.data and len(response.data) > 0:
+                # gpt-image-1 returns base64-encoded images directly
+                if hasattr(response.data[0], 'b64_json') and response.data[0].b64_json:
+                    image_b64 = response.data[0].b64_json
+                    print(f"Base64 image data received for letter '{letter.upper()}'.")
+                    image_bytes = base64.b64decode(image_b64)
                     
                     # Save the generated image
                     return _save_generated_image(
                         image_bytes, letter, object_description, output_dir, run_timestamp
                     )
+                elif hasattr(response.data[0], 'url') and response.data[0].url:
+                    # Fallback for URL-based responses (DALL-E models)
+                    import requests
+                    image_url = response.data[0].url
+                    print(f"Image URL received for letter '{letter.upper()}'.")
+                    
+                    image_response = requests.get(image_url)
+                    if image_response.status_code == 200:
+                        image_bytes = image_response.content
+                        
+                        # Save the generated image
+                        return _save_generated_image(
+                            image_bytes, letter, object_description, output_dir, run_timestamp
+                        )
+                    else:
+                        print(f"❌ Failed to download image for letter '{letter.upper()}'")
+                        continue
                 else:
-                    print(f"❌ Failed to download image for letter '{letter.upper()}'")
+                    print(f"❌ No image data received for letter '{letter.upper()}'")
                     continue
             else:
-                print(f"❌ No image data received for letter '{letter.upper()}'")
+                print(f"❌ No response data received for letter '{letter.upper()}'")
                 continue
 
         except Exception as e:
