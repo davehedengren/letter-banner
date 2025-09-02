@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Letter Banner Generator</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-paint-brush"></i> Letter Banner Generator</h1>
+            <p>Create beautiful stylized letter banners where each letter is shaped like objects of your choice</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Input Form -->
+            <div class="form-section" id="form-section">
+                <div class="card">
+                    <h2><i class="fas fa-edit"></i> Create Your Banner</h2>
+                    
+                    <form id="banner-form">
+                        <!-- Name Input -->
+                        <div class="form-group">
+                            <label for="banner-name">
+                                <i class="fas fa-signature"></i> Banner Name
+                            </label>
+                            <input 
+                                type="text" 
+                                id="banner-name" 
+                                placeholder="Enter the name for your banner (e.g., HELLO)"
+                                maxlength="20"
+                                required
+                            >
+                            <small>The name will be split into individual letters</small>
+                        </div>
+
+                        <!-- Letters Section -->
+                        <div class="form-group">
+                            <label><i class="fas fa-heart"></i> Letter Interests</label>
+                            <div id="letters-container">
+                                <p class="helper-text">Enter a name above to see letter inputs</p>
+                            </div>
+                            <small>Each letter will be styled based on the interest you provide (e.g., hiking, music, cooking)</small>
+                        </div>
+
+                        <!-- Color Palette Selection -->
+                        <div class="form-group">
+                            <label for="color-palette">
+                                <i class="fas fa-palette"></i> Color Palette
+                            </label>
+                            <select id="color-palette" required>
+                                {% for key, palette in color_palettes.items() %}
+                                <option value="{{ key }}" {% if key == 'earthy_vintage' %}selected{% endif %}>
+                                    {{ palette.name }} - {{ palette.description }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div id="palette-preview" class="palette-preview"></div>
+                        </div>
+
+                        <!-- Generate Button -->
+                        <button type="submit" class="generate-btn" id="generate-btn">
+                            <i class="fas fa-magic"></i> Generate Banner
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Progress Section -->
+            <div class="progress-section hidden" id="progress-section">
+                <div class="card">
+                    <h2><i class="fas fa-cog fa-spin"></i> Generating Your Banner</h2>
+                    
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span id="progress-percentage">0%</span>
+                            <span id="progress-status">Initializing...</span>
+                        </div>
+                    </div>
+
+                    <div class="letter-progress" id="letter-progress">
+                        <p>Letters completed: <span id="completed-letters">0</span> / <span id="total-letters">0</span></p>
+                    </div>
+
+                    <div class="progress-details">
+                        <p id="current-step">Starting generation process...</p>
+                    </div>
+
+                    <button class="cancel-btn hidden" id="cancel-btn">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section hidden" id="results-section">
+                <div class="card">
+                    <h2><i class="fas fa-check-circle"></i> Your Banner is Ready!</h2>
+                    
+                    <div class="download-options">
+                        <div class="download-item">
+                            <div class="download-info">
+                                <h3><i class="fas fa-image"></i> Complete Banner</h3>
+                                <p>All letters arranged in a printable banner layout</p>
+                            </div>
+                            <button class="download-btn" data-file-type="banner">
+                                <i class="fas fa-download"></i> Download PNG
+                            </button>
+                        </div>
+
+                        <div class="download-item">
+                            <div class="download-info">
+                                <h3><i class="fas fa-file-pdf"></i> PDF Collection</h3>
+                                <p>All letters in a PDF file, one letter per page</p>
+                            </div>
+                            <button class="download-btn" data-file-type="pdf">
+                                <i class="fas fa-download"></i> Download PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="secondary-btn" id="create-another">
+                            <i class="fas fa-plus"></i> Create Another Banner
+                        </button>
+                        <button class="secondary-btn" id="share-btn">
+                            <i class="fas fa-share"></i> Share
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Section -->
+            <div class="error-section hidden" id="error-section">
+                <div class="card error-card">
+                    <h2><i class="fas fa-exclamation-triangle"></i> Generation Failed</h2>
+                    <div class="error-message" id="error-message">
+                        Something went wrong during banner generation.
+                    </div>
+                    <button class="retry-btn" id="retry-btn">
+                        <i class="fas fa-redo"></i> Try Again
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>
+                <i class="fas fa-heart"></i> 
+                Created with AI-powered letter generation using OpenAI
+            </p>
+            <p class="footer-links">
+                <a href="#" onclick="showAbout()">About</a> | 
+                <a href="#" onclick="showHelp()">Help</a> | 
+                <a href="https://github.com" target="_blank">GitHub</a>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay hidden" id="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-paint-brush fa-spin"></i>
+            <p>Preparing your banner...</p>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal hidden" id="about-modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('about-modal')">&times;</span>
+            <h2>About Letter Banner Generator</h2>
+            <p>This tool uses AI to create beautiful, stylized letters inspired by interests and themes of your choice. Perfect for:</p>
+            <ul>
+                <li>Personalized name banners reflecting individual interests</li>
+                <li>Educational materials with themed letters</li>
+                <li>Decorative prints for homes and offices</li>
+                <li>Creative projects celebrating hobbies and passions</li>
+            </ul>
+            <p>All images are generated at 300dpi and optimized for 8.5x11" printing.</p>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="help-modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('help-modal')">&times;</span>
+            <h2>How to Use</h2>
+            <ol>
+                <li><strong>Enter a name:</strong> Type the name you want to create a banner for</li>
+                <li><strong>Choose interests:</strong> For each letter, specify an interest or theme to inspire the design (e.g., hiking, music, cooking)</li>
+                <li><strong>Select colors:</strong> Pick a color palette that matches your style</li>
+                <li><strong>Generate:</strong> Click generate and wait for AI to create your letters</li>
+                <li><strong>Download:</strong> Get your banner as PNG or PDF files</li>
+            </ol>
+            <h3>Tips:</h3>
+            <ul>
+                <li>Use specific interests for better results (e.g., "rock climbing" vs "sports")</li>
+                <li>Each repeated letter can have a different interest theme</li>
+                <li>Generation takes about 30-60 seconds per letter</li>
+                <li>Files are automatically cleaned up after 24 hours</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

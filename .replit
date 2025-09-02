@@ -1,0 +1,12 @@
+# Replit configuration for Letter Banner Generator
+
+[nix]
+channel = "stable-23_11"
+
+[deployment]
+run = ["python", "main.py"]
+deploymentTarget = "cloudrun"
+
+[[ports]]
+localPort = 8000
+externalPort = 80

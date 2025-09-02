@@ -1,0 +1,19 @@
+# Core web framework
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+
+# Existing dependencies from letter_banner module
+openai>=1.0.0
+python-dotenv>=1.0.0
+Pillow>=10.0.0
+
+# Additional web service dependencies
+jinja2>=3.1.0
+python-multipart>=0.0.6
+aiofiles>=23.0.0
+
+# For PDF generation (existing dependency)
+reportlab>=4.0.0
+
+# For HTTP requests (downloading images)
+requests>=2.25.0
