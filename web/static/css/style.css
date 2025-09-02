@@ -374,6 +374,53 @@ small {
     margin-bottom: var(--spacing-xl);
 }
 
+/* Cost Information */
+.cost-info {
+    margin: var(--spacing-lg) 0;
+    padding: var(--spacing-lg);
+    background: var(--background-color);
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--success-color);
+}
+
+.cost-breakdown h4 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.cost-details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-sm);
+}
+
+.cost-item {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--spacing-xs) 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.cost-total {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--spacing-sm) 0;
+    font-size: var(--font-size-lg);
+    color: var(--primary-color);
+    border-top: 2px solid var(--success-color);
+    margin-top: var(--spacing-sm);
+}
+
+.cost-note {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    font-style: italic;
+}
+
 .download-item {
     display: flex;
     justify-content: space-between;

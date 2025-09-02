@@ -262,16 +262,18 @@ async def process_banner_generation(job_id: str, request: BannerGenerationReques
         generated_letter_paths = []
         completed_count = 0
         
-        # Use as_completed to update progress as each letter finishes
-        tasks_dict = {task: (i, letter) for i, letter, task in letter_tasks}
+        # Wait for all tasks to complete and collect results
+        results = await asyncio.gather(*[task for _, _, task in letter_tasks], return_exceptions=True)
         
-        for task in asyncio.as_completed(tasks_dict.keys()):
+        # Process results and update progress
+        for (i, letter, _), result in zip(letter_tasks, results):
             try:
-                letter_path = await task
-                i, letter = tasks_dict[task]
+                if isinstance(result, Exception):
+                    print(f"⚠️ Error generating letter '{letter}': {result}")
+                    continue
                 
-                if letter_path:
-                    generated_letter_paths.append(letter_path)
+                if result:  # result is the letter_path
+                    generated_letter_paths.append(result)
                     completed_count += 1
                     job["completed_letters"] = completed_count
                     job["progress"] = 10 + int((completed_count / len(request.letters)) * 70)  # 10-80%
@@ -280,8 +282,7 @@ async def process_banner_generation(job_id: str, request: BannerGenerationReques
                 else:
                     print(f"⚠️ Failed to generate letter '{letter}'")
             except Exception as e:
-                i, letter = tasks_dict[task]
-                print(f"⚠️ Error generating letter '{letter}': {e}")
+                print(f"⚠️ Error processing letter '{letter}': {e}")
                 continue
         
         if not generated_letter_paths:
@@ -324,13 +325,24 @@ async def process_banner_generation(job_id: str, request: BannerGenerationReques
         for i, letter_path in enumerate(generated_letter_paths):
             files[f"letter_{i}"] = letter_path
         
+        # Calculate estimated cost (gpt-image-1 pricing)
+        cost_per_image = 0.04  # $0.04 per image for gpt-image-1 standard quality
+        estimated_cost = len(generated_letter_paths) * cost_per_image
+        
         job["files"] = files
         job["status"] = "completed"
         job["progress"] = 100
         job["current_step"] = "Banner generation completed!"
         job["completed_at"] = datetime.now()
+        job["cost_info"] = {
+            "letters_generated": len(generated_letter_paths),
+            "cost_per_letter": cost_per_image,
+            "estimated_total_cost": estimated_cost,
+            "currency": "USD"
+        }
         
         print(f"✅ Banner generation completed for job {job_id}")
+        print(f"💰 Estimated cost: ${estimated_cost:.2f} USD ({len(generated_letter_paths)} letters × ${cost_per_image})")
         
     except Exception as e:
         print(f"❌ Banner generation failed for job {job_id}: {e}")

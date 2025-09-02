@@ -324,6 +324,30 @@ class BannerGenerator {
         downloadButtons.forEach(btn => {
             btn.disabled = false;
         });
+        
+        // Display cost information if available
+        if (status.cost_info) {
+            this.displayCostInfo(status.cost_info);
+        }
+    }
+    
+    displayCostInfo(costInfo) {
+        const costElement = document.getElementById('cost-info');
+        if (costElement && costInfo) {
+            const costHtml = `
+                <div class="cost-breakdown">
+                    <h4><i class="fas fa-dollar-sign"></i> Generation Cost</h4>
+                    <div class="cost-details">
+                        <span class="cost-item">Letters generated: <strong>${costInfo.letters_generated}</strong></span>
+                        <span class="cost-item">Cost per letter: <strong>$${costInfo.cost_per_letter.toFixed(2)} ${costInfo.currency}</strong></span>
+                        <span class="cost-total">Total estimated cost: <strong>$${costInfo.estimated_total_cost.toFixed(2)} ${costInfo.currency}</strong></span>
+                    </div>
+                    <small class="cost-note">* Estimated cost based on OpenAI gpt-image-1 pricing</small>
+                </div>
+            `;
+            costElement.innerHTML = costHtml;
+            costElement.classList.remove('hidden');
+        }
     }
 
     handleGenerationFailed(status) {
