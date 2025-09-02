@@ -148,7 +148,7 @@ def create_pdf_with_all_letters(letter_paths, output_dir, run_timestamp, name="B
                 continue
             
             try:
-                # Open and get image dimensions
+                # Open and process image for PDF
                 with Image.open(letter_path) as img:
                     img_width, img_height = img.size
                     
@@ -167,8 +167,30 @@ def create_pdf_with_all_letters(letter_paths, output_dir, run_timestamp, name="B
                     x = (page_width - final_width) / 2
                     y = (page_height - final_height) / 2
                     
-                    # Draw image on PDF
-                    c.drawImage(letter_path, x, y, width=final_width, height=final_height)
+                    # Handle transparency properly for PDF
+                    if img.mode in ('RGBA', 'LA') or 'transparency' in img.info:
+                        # For transparent images, create a temporary image with white background
+                        # This ensures the letter shows up clearly when printed
+                        white_bg = Image.new('RGB', img.size, 'white')
+                        if img.mode == 'RGBA':
+                            white_bg.paste(img, mask=img.split()[-1])  # Use alpha channel as mask
+                        else:
+                            white_bg.paste(img, (0, 0))
+                        
+                        # Save temporary image
+                        import tempfile
+                        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
+                            white_bg.save(temp_file.name, 'PNG')
+                            temp_path = temp_file.name
+                        
+                        # Draw the processed image
+                        c.drawImage(temp_path, x, y, width=final_width, height=final_height)
+                        
+                        # Clean up temp file
+                        os.unlink(temp_path)
+                    else:
+                        # For non-transparent images, draw directly
+                        c.drawImage(letter_path, x, y, width=final_width, height=final_height)
                     
                     # Extract letter name for logging (but don't print on PDF)
                     letter_name = os.path.basename(letter_path).split('_')[1]  # Extract letter from filename
