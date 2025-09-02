@@ -42,7 +42,7 @@ templates = Jinja2Templates(directory="web/templates")
 
 # Global storage for job status and results
 jobs_storage: Dict[str, Dict[str, Any]] = {}
-executor = ThreadPoolExecutor(max_workers=2)  # Limit concurrent generations
+executor = ThreadPoolExecutor(max_workers=10)  # Allow parallel letter generation
 
 # Cleanup old jobs periodically
 CLEANUP_INTERVAL = 3600  # 1 hour
@@ -238,16 +238,16 @@ async def process_banner_generation(job_id: str, request: BannerGenerationReques
         
         job["current_step"] = f"Using color palette: {color_palette['name']}"
         
-        # Generate each letter
-        generated_letter_paths = []
+        # Generate all letters in parallel
+        job["current_step"] = f"Generating all {len(request.letters)} letters simultaneously..."
+        job["progress"] = 10
+        
+        # Create tasks for all letters
+        loop = asyncio.get_event_loop()
+        letter_tasks = []
         
         for i, letter_req in enumerate(request.letters):
-            job["current_step"] = f"Generating letter '{letter_req.letter}' inspired by {letter_req.object}..."
-            job["progress"] = int((i / len(request.letters)) * 80)  # Reserve 20% for layout
-            
-            # Generate letter in thread pool to avoid blocking
-            loop = asyncio.get_event_loop()
-            letter_path = await loop.run_in_executor(
+            task = loop.run_in_executor(
                 executor,
                 generate_stylized_letter,
                 letter_req.letter,
@@ -256,12 +256,33 @@ async def process_banner_generation(job_id: str, request: BannerGenerationReques
                 run_timestamp,
                 color_palette
             )
-            
-            if letter_path:
-                generated_letter_paths.append(letter_path)
-                job["completed_letters"] = len(generated_letter_paths)
-            else:
-                print(f"⚠️ Failed to generate letter '{letter_req.letter}'")
+            letter_tasks.append((i, letter_req.letter, task))
+        
+        # Wait for letters to complete and update progress in real-time
+        generated_letter_paths = []
+        completed_count = 0
+        
+        # Use as_completed to update progress as each letter finishes
+        tasks_dict = {task: (i, letter) for i, letter, task in letter_tasks}
+        
+        for task in asyncio.as_completed(tasks_dict.keys()):
+            try:
+                letter_path = await task
+                i, letter = tasks_dict[task]
+                
+                if letter_path:
+                    generated_letter_paths.append(letter_path)
+                    completed_count += 1
+                    job["completed_letters"] = completed_count
+                    job["progress"] = 10 + int((completed_count / len(request.letters)) * 70)  # 10-80%
+                    job["current_step"] = f"Generated letter '{letter}' ({completed_count}/{len(request.letters)} complete)"
+                    print(f"✅ Completed letter '{letter}' ({completed_count}/{len(request.letters)})")
+                else:
+                    print(f"⚠️ Failed to generate letter '{letter}'")
+            except Exception as e:
+                i, letter = tasks_dict[task]
+                print(f"⚠️ Error generating letter '{letter}': {e}")
+                continue
         
         if not generated_letter_paths:
             raise Exception("Failed to generate any letters")
