@@ -37,7 +37,7 @@ def generate_stylized_letter(letter, object_description, output_dir, run_timesta
         color_guidance = f" Use this specific color palette: {colors_str}. Style it with {color_palette['mood']}."
     
     # Create prompt for stylized letter based on interest/theme
-    prompt = f"Create a large, bold letter '{letter.upper()}' that is creatively designed and inspired by the interest/theme of {object_description}. The letter should be clearly recognizable as '{letter.upper()}' but artistically decorated with visual elements, symbols, textures, and motifs that represent {object_description}. Make it bold, artistic, and perfect for a decorative banner.{color_guidance} IMPORTANT: Use a completely transparent background - only the letter itself should have color and design elements. The letter should be suitable for cutting out and taping together with other letters to form a banner. No background colors, gradients, or shapes - just the decorated letter on transparent background."
+    prompt = f"Create ONLY the letter '{letter.upper()}' as a decorative design inspired by {object_description}. The letter should be clearly recognizable as '{letter.upper()}' with artistic decorations, patterns, and motifs that represent {object_description}.{color_guidance} CRITICAL: The background must be completely transparent (alpha channel = 0). Do not include any background colors, shapes, frames, borders, or environmental elements. Only generate the letter itself with decorative elements integrated into the letter shape. The letter should appear to float with no background whatsoever - suitable for cutting out and placing on any surface. Think of it as a sticker or decal of just the letter."
     
     print(f"Prompt: {prompt}")
     
@@ -79,6 +79,8 @@ def _generate_image_with_retry(prompt, output_dir, letter, object_description, r
                 output_format="png",
                 quality="high"
             )
+            
+            print(f"API request sent with background='transparent' for letter '{letter.upper()}'")
 
             if response.data and len(response.data) > 0:
                 # gpt-image-1 returns base64-encoded images directly
@@ -153,9 +155,19 @@ def _save_generated_image(image_bytes, letter, object_description, output_dir, r
     new_letter_name = f"{letter_basename}_{run_timestamp}.png"
     new_letter_path = os.path.join(banner_output_dir, new_letter_name)
     
-    # Save image
+    # Save image and check transparency
     img_from_bytes = Image.open(BytesIO(image_bytes))
-    img_from_bytes.save(new_letter_path, format="PNG")
+    
+    # Debug: Check if image has transparency
+    has_transparency = img_from_bytes.mode in ('RGBA', 'LA') or 'transparency' in img_from_bytes.info
+    print(f"🔍 Image mode: {img_from_bytes.mode}, Has transparency: {has_transparency}")
+    
+    # Ensure we save with transparency if available
+    if has_transparency:
+        img_from_bytes.save(new_letter_path, format="PNG", optimize=True)
+    else:
+        print(f"⚠️ Warning: Letter '{letter.upper()}' does not have transparency!")
+        img_from_bytes.save(new_letter_path, format="PNG")
     
     print(f"✅ Letter '{letter.upper()}' saved: {new_letter_name}")
     return new_letter_path
