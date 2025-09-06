@@ -43,7 +43,7 @@
 }
 
 /* Reset and Base Styles */
-* {
+* {image.png
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -208,6 +208,59 @@ small {
     background: var(--background-color);
     border-radius: var(--border-radius);
     min-height: 60px;
+}
+
+/* Cost Estimate */
+.cost-estimate {
+    margin: var(--spacing-lg) 0;
+    padding: var(--spacing-lg);
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--secondary-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.cost-estimate-content h4 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-lg);
+}
+
+.cost-breakdown-preview {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-sm);
+}
+
+.cost-letters,
+.cost-rate {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--spacing-xs) 0;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.cost-total-preview {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--spacing-sm) 0;
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--primary-color);
+    border-top: 2px solid var(--secondary-color);
+    margin-top: var(--spacing-sm);
+}
+
+.cost-disclaimer {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    font-style: italic;
+    text-align: center;
 }
 
 .palette-info {

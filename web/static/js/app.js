@@ -111,6 +111,27 @@ class BannerGenerator {
         });
 
         console.log(`📝 Generated inputs for ${letters.length} letters: ${letters.join('')}`);
+        
+        // Update cost estimate
+        this.updateCostEstimate(letters.length);
+    }
+    
+    updateCostEstimate(letterCount) {
+        const costEstimateDiv = document.getElementById('cost-estimate');
+        const letterCountSpan = document.getElementById('letter-count');
+        const totalCostSpan = document.getElementById('total-cost');
+        
+        if (letterCount > 0) {
+            const costPerLetter = 0.04; // $0.04 per gpt-image-1 generation
+            const totalCost = letterCount * costPerLetter;
+            
+            letterCountSpan.textContent = letterCount;
+            totalCostSpan.textContent = `$${totalCost.toFixed(2)} USD`;
+            
+            costEstimateDiv.classList.remove('hidden');
+        } else {
+            costEstimateDiv.classList.add('hidden');
+        }
     }
 
     updatePalettePreview() {
