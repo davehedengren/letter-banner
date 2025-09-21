@@ -122,7 +122,7 @@ class BannerGenerator {
         const totalCostSpan = document.getElementById('total-cost');
         
         if (letterCount > 0) {
-            const costPerLetter = 0.04; // $0.04 per gpt-image-1 generation
+            const costPerLetter = 0.17; // $0.17 per gpt-image-1 high quality generation
             const totalCost = letterCount * costPerLetter;
             
             letterCountSpan.textContent = letterCount;

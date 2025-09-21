@@ -326,7 +326,7 @@ async def process_banner_generation(job_id: str, request: BannerGenerationReques
             files[f"letter_{i}"] = letter_path
         
         # Calculate estimated cost (gpt-image-1 pricing)
-        cost_per_image = 0.04  # $0.04 per image for gpt-image-1 standard quality
+        cost_per_image = 0.17  # $0.17 per image for gpt-image-1 high quality
         estimated_cost = len(generated_letter_paths) * cost_per_image
         
         job["files"] = files
