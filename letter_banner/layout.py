@@ -153,7 +153,7 @@ def create_pdf_with_all_letters(letter_paths, output_dir, run_timestamp, name="B
                     img_width, img_height = img.size
                     
                     # Calculate scaling to fit on page with margin
-                    margin = 72  # 1 inch margin
+                    margin = 36  # 0.5 inch margin (36 points = 0.5 inches)
                     available_width = page_width - (2 * margin)
                     available_height = page_height - (2 * margin)
                     
