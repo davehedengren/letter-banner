@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 
 def load_api_key():
-    """Load the OpenAI API key from .env file."""
+    """Load API keys from .env file (OpenAI and/or Gemini)."""
     script_dir = os.path.dirname(os.path.abspath(__file__))
     # Look for .env in the parent directory (project root)
     project_root = os.path.dirname(script_dir)
@@ -18,14 +18,23 @@ def load_api_key():
     if not loaded_successfully:
         print(f"Warning: Could not load .env file from {dotenv_path}.")
     
-    api_key = os.getenv("OPENAI_API_KEY")
+    openai_key = os.getenv("OPENAI_API_KEY")
+    gemini_key = os.getenv("GEMINI_API_KEY")
     
-    if not api_key:
-        print("Error: OPENAI_API_KEY not found.")
-        print(f"Please ensure '{dotenv_path}' exists and contains OPENAI_API_KEY='your_key'.")
+    keys_found = []
+    if openai_key:
+        keys_found.append("OpenAI")
+    if gemini_key:
+        keys_found.append("Gemini")
+    
+    if not keys_found:
+        print("Error: No API keys found.")
+        print(f"Please ensure '{dotenv_path}' exists and contains at least one of:")
+        print("  - OPENAI_API_KEY='your_openai_key'")
+        print("  - GEMINI_API_KEY='your_gemini_key'")
         return False
     
-    print("API key loaded successfully.")
+    print(f"API keys loaded successfully: {', '.join(keys_found)}")
     return True
 
 

@@ -5,6 +5,8 @@ class BannerGenerator {
         this.currentJobId = null;
         this.pollInterval = null;
         this.colorPalettes = {};
+        this.models = {};
+        this.selectedModel = 'gemini-3-pro-image-preview';
         
         this.init();
     }
@@ -12,8 +14,9 @@ class BannerGenerator {
     async init() {
         console.log('🎨 Letter Banner Generator initialized');
         
-        // Load color palettes
+        // Load color palettes and models
         await this.loadColorPalettes();
+        await this.loadModels();
         
         // Set up event listeners
         this.setupEventListeners();
@@ -34,6 +37,23 @@ class BannerGenerator {
         }
     }
 
+    async loadModels() {
+        try {
+            const response = await fetch('/api/models');
+            const data = await response.json();
+            this.models = data.models;
+            this.selectedModel = data.default_model;
+            console.log('✅ Models loaded:', Object.keys(this.models));
+        } catch (error) {
+            console.error('❌ Failed to load models:', error);
+            // Use default if API fails
+            this.models = {
+                'gemini-3-pro-image': { cost_per_image: 0.0336 },
+                'gpt-image-1': { cost_per_image: 0.17 }
+            };
+        }
+    }
+
     setupEventListeners() {
         // Form submission
         const form = document.getElementById('banner-form');
@@ -42,6 +62,10 @@ class BannerGenerator {
         // Name input - generate letter inputs
         const nameInput = document.getElementById('banner-name');
         nameInput.addEventListener('input', (e) => this.handleNameInput(e));
+
+        // Model selection
+        const modelSelect = document.getElementById('model-select');
+        modelSelect.addEventListener('change', (e) => this.handleModelChange(e));
 
         // Color palette selection
         const paletteSelect = document.getElementById('color-palette');
@@ -116,16 +140,39 @@ class BannerGenerator {
         this.updateCostEstimate(letters.length);
     }
     
+    handleModelChange(event) {
+        this.selectedModel = event.target.value;
+        const modelInfo = this.models[this.selectedModel];
+        
+        // Update model description
+        const descriptionElement = document.getElementById('model-description');
+        if (descriptionElement && modelInfo) {
+            descriptionElement.textContent = modelInfo.description || '';
+        }
+        
+        // Update cost estimate
+        const nameInput = document.getElementById('banner-name');
+        if (nameInput.value.trim()) {
+            const letters = nameInput.value.split('').filter(char => /[A-Z]/i.test(char));
+            this.updateCostEstimate(letters.length);
+        }
+        
+        console.log(`🔄 Model changed to: ${this.selectedModel}`);
+    }
+
     updateCostEstimate(letterCount) {
         const costEstimateDiv = document.getElementById('cost-estimate');
         const letterCountSpan = document.getElementById('letter-count');
         const totalCostSpan = document.getElementById('total-cost');
+        const costRateSpan = document.getElementById('cost-rate');
         
         if (letterCount > 0) {
-            const costPerLetter = 0.17; // $0.17 per gpt-image-1 high quality generation
+            const modelInfo = this.models[this.selectedModel] || { cost_per_image: 0.17 };
+            const costPerLetter = modelInfo.cost_per_image;
             const totalCost = letterCount * costPerLetter;
             
             letterCountSpan.textContent = letterCount;
+            costRateSpan.textContent = `$${costPerLetter.toFixed(4)} USD`;
             totalCostSpan.textContent = `$${totalCost.toFixed(2)} USD`;
             
             costEstimateDiv.classList.remove('hidden');
@@ -243,6 +290,7 @@ class BannerGenerator {
     collectFormData() {
         const name = document.getElementById('banner-name').value.trim();
         const paletteSelect = document.getElementById('color-palette').value;
+        const modelSelect = document.getElementById('model-select').value;
         
         if (!name) {
             this.showError('Please enter a name for your banner');
@@ -273,7 +321,8 @@ class BannerGenerator {
         return {
             name,
             letters,
-            color_palette: paletteSelect
+            color_palette: paletteSelect,
+            model: modelSelect
         };
     }
 
@@ -355,15 +404,17 @@ class BannerGenerator {
     displayCostInfo(costInfo) {
         const costElement = document.getElementById('cost-info');
         if (costElement && costInfo) {
+            const modelName = costInfo.model || 'selected model';
             const costHtml = `
                 <div class="cost-breakdown">
                     <h4><i class="fas fa-dollar-sign"></i> Generation Cost</h4>
                     <div class="cost-details">
+                        <span class="cost-item">Model: <strong>${modelName}</strong></span>
                         <span class="cost-item">Letters generated: <strong>${costInfo.letters_generated}</strong></span>
-                        <span class="cost-item">Cost per letter: <strong>$${costInfo.cost_per_letter.toFixed(2)} ${costInfo.currency}</strong></span>
+                        <span class="cost-item">Cost per letter: <strong>$${costInfo.cost_per_letter.toFixed(4)} ${costInfo.currency}</strong></span>
                         <span class="cost-total">Total estimated cost: <strong>$${costInfo.estimated_total_cost.toFixed(2)} ${costInfo.currency}</strong></span>
                     </div>
-                    <small class="cost-note">* Estimated cost based on OpenAI gpt-image-1 pricing</small>
+                    <small class="cost-note">* Estimated cost based on ${modelName} pricing</small>
                 </div>
             `;
             costElement.innerHTML = costHtml;

@@ -25,7 +25,7 @@ sys.path.insert(0, project_root)
 
 from letter_banner import config
 from letter_banner.color_palettes import COLOR_PALETTES
-from letter_banner.openai_client import generate_stylized_letter
+from letter_banner.image_generator import generate_stylized_letter
 from letter_banner.layout import create_banner_layout, create_pdf_with_all_letters
 from letter_banner.utils import load_api_key
 
@@ -68,6 +68,7 @@ class BannerGenerationRequest(BaseModel):
     name: str
     letters: List[LetterRequest]
     color_palette: str = "earthy_vintage"
+    model: str = "gemini-3-pro-image-preview"
     
     @validator('name')
     def validate_name(cls, v):
@@ -89,6 +90,12 @@ class BannerGenerationRequest(BaseModel):
     def validate_palette(cls, v):
         if v not in COLOR_PALETTES and v != "custom":
             raise ValueError(f'Invalid color palette. Must be one of: {list(COLOR_PALETTES.keys())} or "custom"')
+        return v
+    
+    @validator('model')
+    def validate_model(cls, v):
+        if v not in config.SUPPORTED_MODELS:
+            raise ValueError(f'Invalid model. Must be one of: {list(config.SUPPORTED_MODELS.keys())}')
         return v
 
 class JobStatus(BaseModel):
@@ -132,6 +139,14 @@ async def home(request: Request):
 async def get_color_palettes():
     """Get available color palettes."""
     return {"palettes": COLOR_PALETTES}
+
+@app.get("/api/models")
+async def get_available_models():
+    """Get available image generation models with pricing and features."""
+    return {
+        "models": config.SUPPORTED_MODELS,
+        "default_model": config.DEFAULT_MODEL
+    }
 
 @app.post("/api/generate-banner")
 async def generate_banner(
@@ -238,8 +253,12 @@ async def process_banner_generation(job_id: str, request: BannerGenerationReques
         
         job["current_step"] = f"Using color palette: {color_palette['name']}"
         
+        # Get model info
+        model_info = config.SUPPORTED_MODELS.get(request.model, config.SUPPORTED_MODELS[config.DEFAULT_MODEL])
+        job["current_step"] = f"Using model: {model_info['name']}"
+        
         # Generate all letters in parallel
-        job["current_step"] = f"Generating all {len(request.letters)} letters simultaneously..."
+        job["current_step"] = f"Generating all {len(request.letters)} letters simultaneously with {model_info['name']}..."
         job["progress"] = 10
         
         # Create tasks for all letters
@@ -254,7 +273,8 @@ async def process_banner_generation(job_id: str, request: BannerGenerationReques
                 letter_req.object,
                 config.OUTPUT_DIR,
                 run_timestamp,
-                color_palette
+                color_palette,
+                request.model
             )
             letter_tasks.append((i, letter_req.letter, task))
         
@@ -325,8 +345,9 @@ async def process_banner_generation(job_id: str, request: BannerGenerationReques
         for i, letter_path in enumerate(generated_letter_paths):
             files[f"letter_{i}"] = letter_path
         
-        # Calculate estimated cost (gpt-image-1 pricing)
-        cost_per_image = 0.17  # $0.17 per image for gpt-image-1 high quality
+        # Calculate estimated cost based on selected model
+        model_info = config.SUPPORTED_MODELS.get(request.model, config.SUPPORTED_MODELS[config.DEFAULT_MODEL])
+        cost_per_image = model_info["cost_per_image"]
         estimated_cost = len(generated_letter_paths) * cost_per_image
         
         job["files"] = files
@@ -334,11 +355,13 @@ async def process_banner_generation(job_id: str, request: BannerGenerationReques
         job["progress"] = 100
         job["current_step"] = "Banner generation completed!"
         job["completed_at"] = datetime.now()
+        job["model_used"] = request.model
         job["cost_info"] = {
             "letters_generated": len(generated_letter_paths),
             "cost_per_letter": cost_per_image,
             "estimated_total_cost": estimated_cost,
-            "currency": "USD"
+            "currency": "USD",
+            "model": model_info["name"]
         }
         
         print(f"✅ Banner generation completed for job {job_id}")

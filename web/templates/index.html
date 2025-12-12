@@ -45,6 +45,22 @@
                             <small>Each letter will be styled based on the interest you provide (e.g., hiking, music, cooking)</small>
                         </div>
 
+                        <!-- Model Selection -->
+                        <div class="form-group">
+                            <label for="model-select">
+                                <i class="fas fa-robot"></i> AI Model
+                            </label>
+                            <select id="model-select" required>
+                                <option value="gemini-3-pro-image-preview" selected>
+                                    Gemini 3 Pro Image Preview (Nano Banana Pro) - $0.03/image, 4K support
+                                </option>
+                                <option value="gpt-image-1">
+                                    OpenAI GPT-Image-1 - $0.17/image
+                                </option>
+                            </select>
+                            <small id="model-description">Advanced image generation with up to 4K resolution and Google Search grounding</small>
+                        </div>
+
                         <!-- Color Palette Selection -->
                         <div class="form-group">
                             <label for="color-palette">
@@ -66,10 +82,10 @@
                                 <h4><i class="fas fa-calculator"></i> Estimated Cost</h4>
                                 <div class="cost-breakdown-preview">
                                     <span class="cost-letters">Letters to generate: <strong id="letter-count">0</strong></span>
-                                    <span class="cost-rate">Cost per letter: <strong>$0.17 USD</strong></span>
+                                    <span class="cost-rate">Cost per letter: <strong id="cost-rate">$0.03 USD</strong></span>
                                     <span class="cost-total-preview">Total estimated cost: <strong id="total-cost">$0.00 USD</strong></span>
                                 </div>
-                                <small class="cost-disclaimer">* Based on OpenAI gpt-image-1 pricing. Final cost may vary.</small>
+                                <small class="cost-disclaimer" id="cost-disclaimer">* Based on selected model pricing. Final cost may vary.</small>
                             </div>
                         </div>
 
