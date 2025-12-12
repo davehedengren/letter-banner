@@ -7,6 +7,9 @@ class BannerGenerator {
         this.colorPalettes = {};
         this.models = {};
         this.selectedModel = 'gemini-3-pro-image-preview';
+        this.currentLetterImages = [];
+        this.themeVariations = null;
+        this.currentEditingLetter = null;
         
         this.init();
     }
@@ -80,6 +83,28 @@ class BannerGenerator {
 
         const cancelBtn = document.getElementById('cancel-btn');
         cancelBtn?.addEventListener('click', () => this.cancelGeneration());
+
+        // Theme mode selection
+        const themeModeRadios = document.querySelectorAll('input[name="theme-mode"]');
+        themeModeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => this.handleThemeModeChange(e));
+        });
+
+        // Generate themes button
+        const generateThemesBtn = document.getElementById('generate-themes-btn');
+        generateThemesBtn?.addEventListener('click', () => this.generateThemeVariations());
+
+        // Approve and generate PDF button
+        const approveBtn = document.getElementById('approve-and-generate-pdf-btn');
+        approveBtn?.addEventListener('click', () => this.generateFinalPDF());
+
+        // Back to form from preview
+        const backToFormBtn = document.getElementById('back-to-form-btn');
+        backToFormBtn?.addEventListener('click', () => this.resetForm());
+
+        // Apply edit button
+        const applyEditBtn = document.getElementById('apply-edit-btn');
+        applyEditBtn?.addEventListener('click', () => this.applyEdit());
 
         // Download buttons
         document.addEventListener('click', (e) => {
@@ -291,26 +316,51 @@ class BannerGenerator {
         const name = document.getElementById('banner-name').value.trim();
         const paletteSelect = document.getElementById('color-palette').value;
         const modelSelect = document.getElementById('model-select').value;
+        const themeMode = document.querySelector('input[name="theme-mode"]:checked').value;
         
         if (!name) {
             this.showError('Please enter a name for your banner');
             return null;
         }
 
-        // Collect letter inputs
-        const letters = [];
-        const letterInputs = document.querySelectorAll('input[name^="letter-"]');
+        let letters = [];
         
-        for (const input of letterInputs) {
-            const letter = input.getAttribute('data-letter');
-            const interest = input.value.trim();
-            
-            if (!interest) {
-                this.showError(`Please specify an interest for letter "${letter}"`);
+        if (themeMode === 'single') {
+            // Single theme mode - use generated variations
+            if (!this.themeVariations || this.themeVariations.length === 0) {
+                this.showError('Please generate theme ideas first');
                 return null;
             }
             
-            letters.push({ letter, object: interest });
+            // Collect variations (user may have edited them)
+            const variationInputs = document.querySelectorAll('.variation-theme-input');
+            variationInputs.forEach((input, index) => {
+                const variation = this.themeVariations[index];
+                const theme = input.value.trim();
+                
+                if (theme) {
+                    letters.push({
+                        letter: variation.letter,
+                        object: theme
+                    });
+                }
+            });
+            
+        } else {
+            // Individual theme mode - collect from letter inputs
+            const letterInputs = document.querySelectorAll('input[name^="letter-"]');
+            
+            for (const input of letterInputs) {
+                const letter = input.getAttribute('data-letter');
+                const interest = input.value.trim();
+                
+                if (!interest) {
+                    this.showError(`Please specify an interest for letter "${letter}"`);
+                    return null;
+                }
+                
+                letters.push({ letter, object: interest });
+            }
         }
 
         if (letters.length === 0) {
@@ -387,18 +437,68 @@ class BannerGenerator {
         console.log('🎉 Banner generation completed!');
         
         this.stopPolling();
-        this.showSection('results-section');
         
-        // Set up download buttons
-        const downloadButtons = document.querySelectorAll('.download-btn');
-        downloadButtons.forEach(btn => {
-            btn.disabled = false;
-        });
+        // NEW: Show preview section instead of going straight to results
+        this.displayLetterPreviews(status);
+        this.showSection('preview-section');
         
-        // Display cost information if available
-        if (status.cost_info) {
-            this.displayCostInfo(status.cost_info);
+        // Store status for later PDF generation
+        this.completedStatus = status;
+    }
+    
+    displayLetterPreviews(status) {
+        const grid = document.getElementById('letters-preview-grid');
+        grid.innerHTML = '';
+        
+        this.currentLetterImages = [];
+        
+        // Get letter files from status
+        const files = status.files || {};
+        const totalLetters = status.total_letters;
+        
+        for (let i = 0; i < totalLetters; i++) {
+            const letterKey = `letter_${i}`;
+            const letterPath = files[letterKey];
+            
+            if (!letterPath) continue;
+            
+            // Extract letter name and theme from filename
+            const filename = letterPath.split('/').pop();
+            const parts = filename.split('_');
+            const letter = parts[1]; // letter_A_theme_timestamp.png
+            const theme = parts.slice(2, -1).join(' '); // Join theme parts
+            
+            this.currentLetterImages.push({
+                index: i,
+                letter: letter,
+                theme: theme,
+                path: letterPath
+            });
+            
+            // Create preview card
+            const card = document.createElement('div');
+            card.className = 'letter-preview-card';
+            card.innerHTML = `
+                <div class="letter-preview-image">
+                    <img src="/api/download/${this.currentJobId}/letter_${i}" alt="Letter ${letter}">
+                </div>
+                <div class="letter-preview-info">
+                    <h3>${letter}</h3>
+                    <p class="letter-theme">${theme}</p>
+                    <button class="edit-letter-btn" data-letter-index="${i}">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                </div>
+            `;
+            
+            // Add click handler for edit button
+            const editBtn = card.querySelector('.edit-letter-btn');
+            editBtn.addEventListener('click', () => this.openEditModal(i));
+            
+            grid.appendChild(card);
         }
+        
+        console.log(`✅ Displayed ${this.currentLetterImages.length} letter previews`);
     }
     
     displayCostInfo(costInfo) {
@@ -553,6 +653,207 @@ class BannerGenerator {
         } else {
             // Fallback to alert if error section not found
             alert(`Error: ${message}`);
+        }
+    }
+
+    // Theme mode handling
+    handleThemeModeChange(event) {
+        const mode = event.target.value;
+        const singleThemeSection = document.getElementById('single-theme-section');
+        const individualSection = document.getElementById('individual-letters-section');
+        
+        if (mode === 'single') {
+            singleThemeSection.classList.remove('hidden');
+            individualSection.classList.add('hidden');
+        } else {
+            singleThemeSection.classList.add('hidden');
+            individualSection.classList.remove('hidden');
+        }
+        
+        console.log(`🔄 Theme mode changed to: ${mode}`);
+    }
+
+    async generateThemeVariations() {
+        const nameInput = document.getElementById('banner-name');
+        const themeInput = document.getElementById('single-theme-input');
+        const name = nameInput.value.trim();
+        const theme = themeInput.value.trim();
+        
+        if (!name) {
+            this.showError('Please enter a name first');
+            return;
+        }
+        
+        if (!theme) {
+            this.showError('Please enter a theme');
+            return;
+        }
+        
+        const generateBtn = document.getElementById('generate-themes-btn');
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating ideas...';
+        
+        try {
+            const response = await fetch('/api/generate-theme-variations', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    name: name,
+                    theme: theme,
+                    model: 'gemini-2.0-flash-exp'
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.detail || 'Failed to generate theme variations');
+            }
+            
+            this.themeVariations = result.variations;
+            this.displayThemeVariations(result.variations);
+            
+        } catch (error) {
+            console.error('❌ Failed to generate theme variations:', error);
+            this.showError(error.message);
+        } finally {
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Generate Theme Ideas';
+        }
+    }
+
+    displayThemeVariations(variations) {
+        const preview = document.getElementById('theme-variations-preview');
+        preview.innerHTML = '<h4>Generated Theme Variations (you can edit these):</h4>';
+        
+        const container = document.createElement('div');
+        container.className = 'theme-variations-container';
+        
+        variations.forEach((v, index) => {
+            const varDiv = document.createElement('div');
+            varDiv.className = 'theme-variation-item';
+            varDiv.innerHTML = `
+                <div class="variation-letter">${v.letter}</div>
+                <input 
+                    type="text" 
+                    class="variation-theme-input" 
+                    data-index="${index}"
+                    value="${v.theme}"
+                    placeholder="Theme for ${v.letter}"
+                >
+            `;
+            container.appendChild(varDiv);
+        });
+        
+        preview.appendChild(container);
+        preview.classList.remove('hidden');
+        
+        console.log('✅ Theme variations displayed');
+    }
+
+    // Letter editing
+    openEditModal(letterIndex) {
+        this.currentEditingLetter = letterIndex;
+        const letterInfo = this.currentLetterImages[letterIndex];
+        
+        if (!letterInfo) {
+            this.showError('Letter not found');
+            return;
+        }
+        
+        // Set modal content
+        document.getElementById('edit-letter-name').textContent = letterInfo.letter;
+        document.getElementById('edit-current-image').src = `/api/download/${this.currentJobId}/letter_${letterIndex}`;
+        document.getElementById('edit-prompt-input').value = '';
+        
+        // Show modal
+        document.getElementById('edit-modal').classList.remove('hidden');
+        
+        console.log(`✏️ Opening edit modal for letter ${letterInfo.letter}`);
+    }
+
+    async applyEdit() {
+        const promptInput = document.getElementById('edit-prompt-input');
+        const editPrompt = promptInput.value.trim();
+        
+        if (!editPrompt) {
+            alert('Please enter edit instructions');
+            return;
+        }
+        
+        const loadingDiv = document.getElementById('edit-loading');
+        const applyBtn = document.getElementById('apply-edit-btn');
+        
+        loadingDiv.classList.remove('hidden');
+        applyBtn.disabled = true;
+        
+        try {
+            const response = await fetch(`/api/edit-letter/${this.currentJobId}/${this.currentEditingLetter}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    edit_prompt: editPrompt,
+                    model: this.selectedModel
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.detail || 'Failed to edit letter');
+            }
+            
+            console.log('✅ Letter edited successfully');
+            
+            // Close modal
+            closeModal('edit-modal');
+            
+            // Refresh the preview
+            const letterCard = document.querySelector(`[data-letter-index="${this.currentEditingLetter}"]`).closest('.letter-preview-card');
+            const img = letterCard.querySelector('img');
+            img.src = `/api/download/${this.currentJobId}/letter_${this.currentEditingLetter}?t=${Date.now()}`;
+            
+        } catch (error) {
+            console.error('❌ Failed to edit letter:', error);
+            alert(`Error editing letter: ${error.message}`);
+        } finally {
+            loadingDiv.classList.add('hidden');
+            applyBtn.disabled = false;
+        }
+    }
+
+    async generateFinalPDF() {
+        const approveBtn = document.getElementById('approve-and-generate-pdf-btn');
+        approveBtn.disabled = true;
+        approveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
+        
+        try {
+            const response = await fetch(`/api/generate-pdf/${this.currentJobId}`, {
+                method: 'POST'
+            });
+            
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.detail || 'Failed to generate PDF');
+            }
+            
+            console.log('✅ PDF generated successfully');
+            
+            // Show results section with download options
+            this.showSection('results-section');
+            
+            // Display cost info if available
+            if (this.completedStatus && this.completedStatus.cost_info) {
+                this.displayCostInfo(this.completedStatus.cost_info);
+            }
+            
+        } catch (error) {
+            console.error('❌ Failed to generate PDF:', error);
+            this.showError(error.message);
+        } finally {
+            approveBtn.disabled = false;
+            approveBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Approve All & Generate PDF';
         }
     }
 }

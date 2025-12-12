@@ -28,6 +28,8 @@ from letter_banner.color_palettes import COLOR_PALETTES
 from letter_banner.image_generator import generate_stylized_letter
 from letter_banner.layout import create_banner_layout, create_pdf_with_all_letters
 from letter_banner.utils import load_api_key
+from letter_banner.theme_generator import generate_theme_variations
+from letter_banner.image_editor import edit_letter_image
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -148,6 +150,47 @@ async def get_available_models():
         "default_model": config.DEFAULT_MODEL
     }
 
+class ThemeVariationRequest(BaseModel):
+    name: str
+    theme: str
+    model: str = "gemini-2.0-flash-exp"
+    
+    @validator('name')
+    def validate_name(cls, v):
+        if not v.strip():
+            raise ValueError('Name cannot be empty')
+        return v.strip()
+    
+    @validator('theme')
+    def validate_theme(cls, v):
+        if not v.strip():
+            raise ValueError('Theme cannot be empty')
+        return v.strip()
+
+@app.post("/api/generate-theme-variations")
+async def generate_theme_variations_api(request: ThemeVariationRequest):
+    """Generate creative theme variations for each letter from a single overarching theme."""
+    try:
+        variations = generate_theme_variations(
+            name=request.name,
+            theme=request.theme,
+            model=request.model
+        )
+        
+        if variations:
+            return {
+                "success": True,
+                "variations": variations,
+                "name": request.name,
+                "theme": request.theme
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to generate theme variations")
+            
+    except Exception as e:
+        print(f"❌ Error in theme variation endpoint: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/generate-banner")
 async def generate_banner(
     request: BannerGenerationRequest,
@@ -231,6 +274,149 @@ async def download_file(job_id: str, file_type: str):
         filename=filename,
         media_type='application/octet-stream'
     )
+
+class EditLetterRequest(BaseModel):
+    edit_prompt: str
+    model: str = "gemini-3-pro-image-preview"
+    
+    @validator('edit_prompt')
+    def validate_prompt(cls, v):
+        if not v.strip():
+            raise ValueError('Edit prompt cannot be empty')
+        return v.strip()
+
+@app.post("/api/edit-letter/{job_id}/{letter_index}")
+async def edit_letter(job_id: str, letter_index: int, request: EditLetterRequest, background_tasks: BackgroundTasks):
+    """Edit a specific letter with an image-to-image prompt."""
+    if job_id not in jobs_storage:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    job = jobs_storage[job_id]
+    
+    if job["status"] != "completed":
+        raise HTTPException(status_code=400, detail="Job must be completed before editing")
+    
+    if not job.get("files"):
+        raise HTTPException(status_code=400, detail="No files available to edit")
+    
+    # Get the letter file
+    letter_key = f"letter_{letter_index}"
+    if letter_key not in job["files"]:
+        raise HTTPException(status_code=404, detail=f"Letter {letter_index} not found")
+    
+    original_path = job["files"][letter_key]
+    
+    if not os.path.exists(original_path):
+        raise HTTPException(status_code=404, detail="Original image file not found")
+    
+    # Create edited filename
+    base_dir = os.path.dirname(original_path)
+    base_name = os.path.basename(original_path)
+    name_without_ext = os.path.splitext(base_name)[0]
+    edited_path = os.path.join(base_dir, f"{name_without_ext}_edited.png")
+    
+    # Perform the edit
+    try:
+        result_path = await asyncio.get_event_loop().run_in_executor(
+            executor,
+            edit_letter_image,
+            original_path,
+            request.edit_prompt,
+            edited_path,
+            request.model
+        )
+        
+        if result_path:
+            # Update job storage with edited image
+            job["files"][letter_key] = result_path
+            
+            # Track edit history
+            if "edit_history" not in job:
+                job["edit_history"] = {}
+            if letter_key not in job["edit_history"]:
+                job["edit_history"][letter_key] = []
+            
+            job["edit_history"][letter_key].append({
+                "prompt": request.edit_prompt,
+                "model": request.model,
+                "timestamp": datetime.now().isoformat(),
+                "original_path": original_path,
+                "edited_path": result_path
+            })
+            
+            return {
+                "success": True,
+                "message": "Letter edited successfully",
+                "edited_path": result_path,
+                "letter_index": letter_index
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to edit image")
+            
+    except Exception as e:
+        print(f"❌ Error editing letter: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/generate-pdf/{job_id}")
+async def generate_pdf_endpoint(job_id: str):
+    """Generate PDF with current letters after user approval."""
+    if job_id not in jobs_storage:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    job = jobs_storage[job_id]
+    
+    if job["status"] != "completed":
+        raise HTTPException(status_code=400, detail="Job must be completed before generating PDF")
+    
+    if not job.get("files"):
+        raise HTTPException(status_code=400, detail="No files available")
+    
+    try:
+        # Get current letter paths (may include edited versions)
+        letter_paths = []
+        for i in range(job["total_letters"]):
+            letter_key = f"letter_{i}"
+            if letter_key in job["files"]:
+                letter_paths.append(job["files"][letter_key])
+        
+        if not letter_paths:
+            raise HTTPException(status_code=400, detail="No letter files found")
+        
+        # Get timestamp and name from request data
+        request_data = job.get("request_data", {})
+        name = request_data.get("name", "BANNER")
+        
+        # Extract timestamp from existing files
+        import re
+        first_file = os.path.basename(letter_paths[0])
+        timestamp_match = re.search(r'_(\d{8}_\d{6})', first_file)
+        run_timestamp = timestamp_match.group(1) if timestamp_match else datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        # Generate PDF with current images
+        pdf_path = await asyncio.get_event_loop().run_in_executor(
+            executor,
+            create_pdf_with_all_letters,
+            letter_paths,
+            config.OUTPUT_DIR,
+            run_timestamp,
+            name
+        )
+        
+        if pdf_path:
+            # Update job storage with PDF path
+            job["files"]["pdf"] = pdf_path
+            
+            return {
+                "success": True,
+                "message": "PDF generated successfully",
+                "pdf_path": pdf_path
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to generate PDF")
+            
+    except Exception as e:
+        print(f"❌ Error generating PDF: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 async def process_banner_generation(job_id: str, request: BannerGenerationRequest):
     """Process banner generation in the background."""

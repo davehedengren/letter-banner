@@ -36,8 +36,41 @@
                             <small>The name will be split into individual letters</small>
                         </div>
 
-                        <!-- Letters Section -->
+                        <!-- Theme Mode Selection -->
                         <div class="form-group">
+                            <label><i class="fas fa-lightbulb"></i> Theme Mode</label>
+                            <div class="theme-mode-selector">
+                                <label class="radio-option">
+                                    <input type="radio" name="theme-mode" value="individual" checked>
+                                    <span>Individual Themes</span>
+                                    <small>Specify a unique theme for each letter</small>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="theme-mode" value="single">
+                                    <span>Single Theme</span>
+                                    <small>One theme, AI generates creative variations for each letter</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Single Theme Input (Hidden by default) -->
+                        <div class="form-group hidden" id="single-theme-section">
+                            <label for="single-theme-input">
+                                <i class="fas fa-magic"></i> Enter Theme
+                            </label>
+                            <input 
+                                type="text" 
+                                id="single-theme-input" 
+                                placeholder="e.g., mermaids, space exploration, vintage books"
+                            >
+                            <button type="button" class="secondary-btn" id="generate-themes-btn">
+                                <i class="fas fa-wand-magic-sparkles"></i> Generate Theme Ideas
+                            </button>
+                            <div id="theme-variations-preview" class="theme-variations-preview hidden"></div>
+                        </div>
+
+                        <!-- Letters Section (for individual themes) -->
+                        <div class="form-group" id="individual-letters-section">
                             <label><i class="fas fa-heart"></i> Letter Interests</label>
                             <div id="letters-container">
                                 <p class="helper-text">Enter a name above to see letter inputs</p>
@@ -123,6 +156,27 @@
                     <button class="cancel-btn hidden" id="cancel-btn">
                         <i class="fas fa-times"></i> Cancel
                     </button>
+                </div>
+            </div>
+
+            <!-- Preview Section -->
+            <div class="preview-section hidden" id="preview-section">
+                <div class="card">
+                    <h2><i class="fas fa-image"></i> Preview Your Letters</h2>
+                    <p class="helper-text">Review your generated letters. Click any letter to edit it.</p>
+                    
+                    <div class="letters-preview-grid" id="letters-preview-grid">
+                        <!-- Letters will be dynamically inserted here -->
+                    </div>
+                    
+                    <div class="preview-actions">
+                        <button type="button" class="secondary-btn" id="back-to-form-btn">
+                            <i class="fas fa-arrow-left"></i> Start Over
+                        </button>
+                        <button type="button" class="generate-btn" id="approve-and-generate-pdf-btn">
+                            <i class="fas fa-file-pdf"></i> Approve All & Generate PDF
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -239,6 +293,50 @@
                 <li>Generation takes about 30-60 seconds per letter</li>
                 <li>Files are automatically cleaned up after 24 hours</li>
             </ul>
+        </div>
+    </div>
+
+    <!-- Edit Letter Modal -->
+    <div class="modal hidden" id="edit-modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('edit-modal')">&times;</span>
+            <h2><i class="fas fa-edit"></i> Edit Letter <span id="edit-letter-name"></span></h2>
+            
+            <div class="edit-modal-body">
+                <div class="edit-preview">
+                    <div class="edit-image-container">
+                        <p class="helper-text">Current Version</p>
+                        <img id="edit-current-image" src="" alt="Current letter">
+                    </div>
+                </div>
+                
+                <div class="edit-form">
+                    <div class="form-group">
+                        <label for="edit-prompt-input">
+                            <i class="fas fa-wand-magic-sparkles"></i> Edit Instructions
+                        </label>
+                        <textarea 
+                            id="edit-prompt-input" 
+                            placeholder="e.g., 'make it darker', 'add more flowers', 'change to blue tones'"
+                            rows="3"
+                        ></textarea>
+                        <small>Describe how you want to modify this letter</small>
+                    </div>
+                    
+                    <div class="edit-actions">
+                        <button type="button" class="secondary-btn" onclick="closeModal('edit-modal')">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="button" class="generate-btn" id="apply-edit-btn">
+                            <i class="fas fa-check"></i> Apply Edit
+                        </button>
+                    </div>
+                    
+                    <div id="edit-loading" class="hidden">
+                        <i class="fas fa-spinner fa-spin"></i> Editing letter...
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
