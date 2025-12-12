@@ -340,9 +340,14 @@ class BannerGenerator {
             
             // Collect variations (user may have edited them)
             const variationInputs = document.querySelectorAll('.variation-theme-input');
+            console.log(`Found ${variationInputs.length} variation inputs`);
+            console.log(`Have ${this.themeVariations.length} theme variations stored`);
+            
             variationInputs.forEach((input, index) => {
                 const variation = this.themeVariations[index];
                 const theme = input.value.trim();
+                
+                console.log(`Letter ${variation.letter}: "${theme}"`);
                 
                 if (theme) {
                     letters.push({
@@ -351,6 +356,8 @@ class BannerGenerator {
                     });
                 }
             });
+            
+            console.log(`Collected ${letters.length} letters from variations`);
             
         } else {
             // Individual theme mode - collect from letter inputs
@@ -370,10 +377,13 @@ class BannerGenerator {
         }
 
         if (letters.length === 0) {
-            this.showError('Please enter at least one letter');
+            console.error('No letters collected!');
+            this.showError('Please enter at least one letter theme');
             return null;
         }
 
+        console.log(`✅ Returning form data with ${letters.length} letters`);
+        
         return {
             name,
             letters,
