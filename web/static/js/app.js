@@ -489,16 +489,20 @@ class BannerGenerator {
             const filename = letterPath.split('/').pop();
             const parts = filename.split('_');
             const letter = parts[1]; // letter_A_theme_timestamp.png
-            const theme = parts.slice(2, -1).join(' '); // Join theme parts
+            const themeRaw = parts.slice(2, -1).join(' '); // Join theme parts
+            
+            // Extract just the first few words of the theme (before any colon or long description)
+            const themeShort = themeRaw.split(':')[0].substring(0, 50);
             
             this.currentLetterImages.push({
                 index: i,
                 letter: letter,
-                theme: theme,
+                theme: themeShort,
+                fullTheme: themeRaw,
                 path: letterPath
             });
             
-            // Create preview card
+            // Create preview card with simplified theme display
             const card = document.createElement('div');
             card.className = 'letter-preview-card';
             card.innerHTML = `
@@ -507,9 +511,9 @@ class BannerGenerator {
                 </div>
                 <div class="letter-preview-info">
                     <h3>${letter}</h3>
-                    <p class="letter-theme">${theme}</p>
+                    <p class="letter-theme">${themeShort}</p>
                     <button class="edit-letter-btn" data-letter-index="${i}">
-                        <i class="fas fa-edit"></i> Edit
+                        <i class="fas fa-edit"></i> Edit or Add Details
                     </button>
                 </div>
             `;
