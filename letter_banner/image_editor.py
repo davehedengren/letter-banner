@@ -35,6 +35,7 @@ def edit_letter_image(image_path, edit_prompt, output_path, model="gemini-3-pro-
 def _edit_with_gemini(image_path, edit_prompt, output_path, model="gemini-3-pro-image-preview"):
     """Edit image using Gemini image-to-image."""
     try:
+        # Client automatically uses GEMINI_API_KEY environment variable
         client = genai.Client()
         
         # Load the original image

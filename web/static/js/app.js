@@ -275,10 +275,15 @@ class BannerGenerator {
     async handleFormSubmit(event) {
         event.preventDefault();
         
+        console.log('🚀 Form submitted');
+        
         const formData = this.collectFormData();
-        if (!formData) return;
+        if (!formData) {
+            console.log('❌ Form validation failed');
+            return;
+        }
 
-        console.log('🚀 Starting banner generation:', formData);
+        console.log('✅ Form data collected:', formData);
         
         // Show loading and switch to progress view
         this.showSection('progress-section');
@@ -328,7 +333,8 @@ class BannerGenerator {
         if (themeMode === 'single') {
             // Single theme mode - use generated variations
             if (!this.themeVariations || this.themeVariations.length === 0) {
-                this.showError('Please generate theme ideas first');
+                alert('⚠️ Please click "Generate Theme Ideas" button first to create letter variations!');
+                this.showError('Please generate theme ideas first by clicking the "Generate Theme Ideas" button');
                 return null;
             }
             
