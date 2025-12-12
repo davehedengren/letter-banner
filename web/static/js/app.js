@@ -119,6 +119,7 @@ class BannerGenerator {
     handleNameInput(event) {
         const name = event.target.value.toUpperCase();
         const lettersContainer = document.getElementById('letters-container');
+        const themeMode = document.querySelector('input[name="theme-mode"]:checked')?.value || 'individual';
         
         // Clear existing inputs
         lettersContainer.innerHTML = '';
@@ -136,30 +137,36 @@ class BannerGenerator {
             return;
         }
 
-        // Create input for each letter (including repeated letters)
-        letters.forEach((letter, index) => {
-            const letterDiv = document.createElement('div');
-            letterDiv.className = 'letter-input';
-            
-            // Show position for repeated letters
-            const letterCount = letters.filter(l => l === letter).length;
-            const letterPosition = letters.slice(0, index + 1).filter(l => l === letter).length;
-            const displayLabel = letterCount > 1 ? `${letter} (${letterPosition})` : letter;
-            
-            letterDiv.innerHTML = `
-                <div class="letter-label">${displayLabel}</div>
-                <input 
-                    type="text" 
-                    name="letter-${index}" 
-                    data-letter="${letter}"
-                    placeholder="What interest should inspire ${letter}? (e.g., hiking, cooking, music)"
-                    required
-                >
-            `;
-            lettersContainer.appendChild(letterDiv);
-        });
+        // Only create individual letter inputs if in Individual Theme mode
+        if (themeMode === 'individual') {
+            // Create input for each letter (including repeated letters)
+            letters.forEach((letter, index) => {
+                const letterDiv = document.createElement('div');
+                letterDiv.className = 'letter-input';
+                
+                // Show position for repeated letters
+                const letterCount = letters.filter(l => l === letter).length;
+                const letterPosition = letters.slice(0, index + 1).filter(l => l === letter).length;
+                const displayLabel = letterCount > 1 ? `${letter} (${letterPosition})` : letter;
+                
+                letterDiv.innerHTML = `
+                    <div class="letter-label">${displayLabel}</div>
+                    <input 
+                        type="text" 
+                        name="letter-${index}" 
+                        data-letter="${letter}"
+                        placeholder="What interest should inspire ${letter}? (e.g., hiking, cooking, music)"
+                        required
+                    >
+                `;
+                lettersContainer.appendChild(letterDiv);
+            });
 
-        console.log(`📝 Generated inputs for ${letters.length} letters: ${letters.join('')}`);
+            console.log(`📝 Generated inputs for ${letters.length} letters: ${letters.join('')}`);
+        } else {
+            // In Single Theme mode, just show a message
+            lettersContainer.innerHTML = `<p class="helper-text">Using single theme mode. Generate theme ideas to see variations for ${letters.length} letters.</p>`;
+        }
         
         // Update cost estimate
         this.updateCostEstimate(letters.length);
@@ -684,6 +691,12 @@ class BannerGenerator {
         } else {
             singleThemeSection.classList.add('hidden');
             individualSection.classList.remove('hidden');
+        }
+        
+        // Regenerate letter inputs for the current name
+        const nameInput = document.getElementById('banner-name');
+        if (nameInput.value.trim()) {
+            this.handleNameInput({ target: nameInput });
         }
         
         console.log(`🔄 Theme mode changed to: ${mode}`);
