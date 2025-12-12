@@ -7,17 +7,20 @@ from dotenv import load_dotenv
 
 
 def load_api_key():
-    """Load API keys from .env file (OpenAI and/or Gemini)."""
+    """Load API keys from environment or .env file (OpenAI and/or Gemini)."""
     script_dir = os.path.dirname(os.path.abspath(__file__))
     # Look for .env in the parent directory (project root)
     project_root = os.path.dirname(script_dir)
     dotenv_path = os.path.join(project_root, ".env")
     
-    loaded_successfully = load_dotenv(dotenv_path=dotenv_path, override=True)
+    # Load from .env file if it exists, but DON'T override existing environment variables
+    # This allows Replit Secrets (or other environment variables) to take precedence
+    loaded_successfully = load_dotenv(dotenv_path=dotenv_path, override=False)
     
     if not loaded_successfully:
-        print(f"Warning: Could not load .env file from {dotenv_path}.")
+        print(f"Info: No .env file found at {dotenv_path} (this is normal on Replit with Secrets)")
     
+    # Check for API keys in environment
     openai_key = os.getenv("OPENAI_API_KEY")
     gemini_key = os.getenv("GEMINI_API_KEY")
     
@@ -29,9 +32,13 @@ def load_api_key():
     
     if not keys_found:
         print("Error: No API keys found.")
-        print(f"Please ensure '{dotenv_path}' exists and contains at least one of:")
-        print("  - OPENAI_API_KEY='your_openai_key'")
-        print("  - GEMINI_API_KEY='your_gemini_key'")
+        print("For local development:")
+        print(f"  - Create '{dotenv_path}' with your API keys")
+        print("For Replit deployment:")
+        print("  - Add keys to Replit Secrets (🔒 icon in sidebar)")
+        print("Required keys (add at least one):")
+        print("  - OPENAI_API_KEY")
+        print("  - GEMINI_API_KEY")
         return False
     
     print(f"API keys loaded successfully: {', '.join(keys_found)}")
