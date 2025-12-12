@@ -42,6 +42,42 @@ COLOR_PALETTES = {
         "description": "Vibrant electric blue, bright yellow, lime green, orange, white",
         "colors": ["vibrant electric blue", "bright sunny yellow", "lime green", "vibrant orange", "crisp white"],
         "mood": "energetic, bright, and youthful with electric blue focus"
+    },
+    "christmas": {
+        "name": "Christmas",
+        "description": "Deep red, forest green, gold, cream white, holly berry",
+        "colors": ["deep cranberry red", "forest green", "metallic gold", "cream white", "holly berry red"],
+        "mood": "festive Christmas holiday style with traditional colors"
+    },
+    "valentines": {
+        "name": "Valentine's Day",
+        "description": "Rose red, soft pink, cream white, champagne gold, burgundy",
+        "colors": ["rose red", "soft blush pink", "cream white", "champagne gold", "deep burgundy"],
+        "mood": "romantic Valentine's Day style with loving hearts and roses"
+    },
+    "halloween": {
+        "name": "Halloween",
+        "description": "Pumpkin orange, midnight black, deep purple, lime green, bone white",
+        "colors": ["pumpkin orange", "midnight black", "deep purple", "lime green", "bone white"],
+        "mood": "spooky Halloween style with haunted house vibes"
+    },
+    "easter_spring": {
+        "name": "Easter Pastel",
+        "description": "Pastel pink, baby blue, lemon yellow, mint green, lavender",
+        "colors": ["pastel pink", "baby blue", "lemon yellow", "mint green", "soft lavender"],
+        "mood": "cheerful Easter style with soft pastel spring colors"
+    },
+    "fourth_july": {
+        "name": "4th of July",
+        "description": "Patriotic red, navy blue, white, gold stars",
+        "colors": ["patriotic red", "navy blue", "crisp white", "golden yellow", "steel blue"],
+        "mood": "patriotic American celebration style with stars and stripes"
+    },
+    "st_patricks": {
+        "name": "St. Patrick's Day",
+        "description": "Emerald green, gold, cream, forest green, shamrock",
+        "colors": ["emerald green", "metallic gold", "cream white", "forest green", "clover green"],
+        "mood": "Irish celebration style with lucky shamrocks and Celtic patterns"
     }
 }
 
