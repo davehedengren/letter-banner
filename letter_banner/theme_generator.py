@@ -38,6 +38,8 @@ def _generate_variations_gemini(letters, theme, model="gemini-2.0-flash-exp"):
     
     prompt = f"""For the letters {', '.join(letters)}, generate creative and specific theme variations based on the overarching theme '{theme}'.
 
+IMPORTANT: The theme variation does NOT need to start with the same letter. For example, for letter 'A' with ocean theme, you could suggest "treasure chest" or "submarine" - it doesn't have to be "anchor" or "algae". Focus on variety and visual interest!
+
 Each letter should have a unique object, concept, or element related to {theme}.
 Make them diverse, interesting, and visually distinctive from each other.
 The variations should work well as decorative letter designs.
@@ -51,10 +53,12 @@ Return ONLY a valid JSON array in this exact format, with no additional text:
 
 Example for theme 'ocean' with letters A, B, C:
 [
-  {{"letter": "A", "theme": "anchor"}},
-  {{"letter": "B", "theme": "bubbles and sea foam"}},
-  {{"letter": "C", "theme": "coral reef"}}
+  {{"letter": "A", "theme": "coral reef"}},
+  {{"letter": "B", "theme": "treasure chest"}},
+  {{"letter": "C", "theme": "submarine periscope"}}
 ]
+
+Notice how none of the themes start with their letter - this gives more creative freedom!
 
 Now generate for the letters {', '.join(letters)} with theme '{theme}'."""
 
@@ -103,6 +107,8 @@ def _generate_variations_openai(letters, theme, model="gpt-4o"):
     
     prompt = f"""For the letters {', '.join(letters)}, generate creative and specific theme variations based on the overarching theme '{theme}'.
 
+IMPORTANT: The theme variation does NOT need to start with the same letter. For example, for letter 'A' with ocean theme, you could suggest "treasure chest" or "submarine" - it doesn't have to be "anchor" or "algae". Focus on variety and visual interest!
+
 Each letter should have a unique object, concept, or element related to {theme}.
 Make them diverse, interesting, and visually distinctive from each other.
 The variations should work well as decorative letter designs.
@@ -116,10 +122,12 @@ Return ONLY a valid JSON array in this exact format, with no additional text:
 
 Example for theme 'ocean' with letters A, B, C:
 [
-  {{"letter": "A", "theme": "anchor"}},
-  {{"letter": "B", "theme": "bubbles and sea foam"}},
-  {{"letter": "C", "theme": "coral reef"}}
+  {{"letter": "A", "theme": "coral reef"}},
+  {{"letter": "B", "theme": "treasure chest"}},
+  {{"letter": "C", "theme": "submarine periscope"}}
 ]
+
+Notice how none of the themes start with their letter - this gives more creative freedom!
 
 Now generate for the letters {', '.join(letters)} with theme '{theme}'."""
 
