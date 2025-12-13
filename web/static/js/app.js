@@ -241,6 +241,7 @@ class BannerGenerator {
     getColorValue(colorName) {
         // Simple color name to hex/color mapping
         const colorMap = {
+            // Original palettes
             'warm beige': '#F5F5DC',
             'deep forest green': '#355E3B',
             'rich brown': '#8B4513',
@@ -273,7 +274,29 @@ class BannerGenerator {
             'vibrant electric blue': '#0080FF',
             'bright sunny yellow': '#FFFF00',
             'lime green': '#32CD32',
-            'vibrant orange': '#FF8C00'
+            'vibrant orange': '#FF8C00',
+            
+            // Holiday palette colors
+            'deep cranberry red': '#C41E3A',
+            'forest green': '#228B22',
+            'metallic gold': '#D4AF37',
+            'holly berry red': '#C41E3A',
+            'rose red': '#E63946',
+            'champagne gold': '#F7E7CE',
+            'pumpkin orange': '#FF7518',
+            'midnight black': '#1A1A1A',
+            'deep purple': '#4B0082',
+            'bone white': '#F9F6EE',
+            'pastel pink': '#FFB3BA',
+            'baby blue': '#BAE1FF',
+            'lemon yellow': '#FFFFBA',
+            'mint green': '#BAFFC9',
+            'soft lavender': '#E0BBE4',
+            'patriotic red': '#B22234',
+            'navy blue': '#000080',
+            'steel blue': '#4682B4',
+            'emerald green': '#50C878',
+            'clover green': '#3A9B3E'
         };
         
         return colorMap[colorName] || '#CCCCCC';
