@@ -38,13 +38,20 @@ def _generate_variations_gemini(letters, theme, model="gemini-2.0-flash-exp"):
     
     prompt = f"""For the letters {', '.join(letters)}, generate creative and specific theme variations based on the overarching theme '{theme}'.
 
-IMPORTANT: The theme variation does NOT need to start with the same letter. For example, for letter 'A' with ocean theme, you could suggest "treasure chest" or "submarine" - it doesn't have to be "anchor" or "algae". Focus on variety and visual interest!
+CRITICAL INSTRUCTION: DO NOT make the theme start with the same letter! This is a common mistake to avoid.
+
+For example, if the letter is 'H' and theme is 'Lord of the Rings':
+❌ WRONG: "Helm's Deep" (starts with H)
+❌ WRONG: "Hobbit" (starts with H)
+✅ CORRECT: "One Ring" (doesn't start with H)
+✅ CORRECT: "Mount Doom" (doesn't start with H)
+✅ CORRECT: "Elven cloak" (doesn't start with H)
 
 Each letter should have a unique object, concept, or element related to {theme}.
-Make them diverse, interesting, and visually distinctive from each other.
-The variations should work well as decorative letter designs.
+Make them diverse, interesting, and visually distinctive.
+Deliberately choose variations that DON'T start with the letter they're assigned to.
 
-Return ONLY a valid JSON array in this exact format, with no additional text:
+Return ONLY a valid JSON array:
 [
   {{"letter": "{letters[0]}", "theme": "specific variation"}},
   {{"letter": "{letters[1]}", "theme": "specific variation"}},
@@ -55,12 +62,10 @@ Example for theme 'ocean' with letters A, B, C:
 [
   {{"letter": "A", "theme": "coral reef"}},
   {{"letter": "B", "theme": "treasure chest"}},
-  {{"letter": "C", "theme": "submarine periscope"}}
+  {{"letter": "C", "theme": "whale tail"}}
 ]
 
-Notice how none of the themes start with their letter - this gives more creative freedom!
-
-Now generate for the letters {', '.join(letters)} with theme '{theme}'."""
+Now generate for {', '.join(letters)} with theme '{theme}'. Remember: themes should NOT start with their letter!"""
 
     try:
         print(f"🎨 Generating theme variations for '{theme}' with Gemini...")
@@ -107,13 +112,20 @@ def _generate_variations_openai(letters, theme, model="gpt-4o"):
     
     prompt = f"""For the letters {', '.join(letters)}, generate creative and specific theme variations based on the overarching theme '{theme}'.
 
-IMPORTANT: The theme variation does NOT need to start with the same letter. For example, for letter 'A' with ocean theme, you could suggest "treasure chest" or "submarine" - it doesn't have to be "anchor" or "algae". Focus on variety and visual interest!
+CRITICAL INSTRUCTION: DO NOT make the theme start with the same letter! This is a common mistake to avoid.
+
+For example, if the letter is 'H' and theme is 'Lord of the Rings':
+❌ WRONG: "Helm's Deep" (starts with H)
+❌ WRONG: "Hobbit" (starts with H)
+✅ CORRECT: "One Ring" (doesn't start with H)
+✅ CORRECT: "Mount Doom" (doesn't start with H)
+✅ CORRECT: "Elven cloak" (doesn't start with H)
 
 Each letter should have a unique object, concept, or element related to {theme}.
-Make them diverse, interesting, and visually distinctive from each other.
-The variations should work well as decorative letter designs.
+Make them diverse, interesting, and visually distinctive.
+Deliberately choose variations that DON'T start with the letter they're assigned to.
 
-Return ONLY a valid JSON array in this exact format, with no additional text:
+Return ONLY a valid JSON array:
 [
   {{"letter": "{letters[0]}", "theme": "specific variation"}},
   {{"letter": "{letters[1]}", "theme": "specific variation"}},
@@ -124,12 +136,10 @@ Example for theme 'ocean' with letters A, B, C:
 [
   {{"letter": "A", "theme": "coral reef"}},
   {{"letter": "B", "theme": "treasure chest"}},
-  {{"letter": "C", "theme": "submarine periscope"}}
+  {{"letter": "C", "theme": "whale tail"}}
 ]
 
-Notice how none of the themes start with their letter - this gives more creative freedom!
-
-Now generate for the letters {', '.join(letters)} with theme '{theme}'."""
+Now generate for {', '.join(letters)} with theme '{theme}'. Remember: themes should NOT start with their letter!"""
 
     try:
         print(f"🎨 Generating theme variations for '{theme}' with OpenAI...")
@@ -137,7 +147,7 @@ Now generate for the letters {', '.join(letters)} with theme '{theme}'."""
         response = client.chat.completions.create(
             model=model,
             messages=[
-                {"role": "system", "content": "You are a creative assistant that generates theme variations for decorative letters. Always respond with valid JSON only."},
+                {"role": "system", "content": "You are a creative assistant that generates theme variations for decorative letters. Always respond with valid JSON only. NEVER match the theme's first letter with the letter being designed."},
                 {"role": "user", "content": prompt}
             ],
             response_format={"type": "json_object"}
@@ -168,4 +178,3 @@ Now generate for the letters {', '.join(letters)} with theme '{theme}'."""
     except Exception as e:
         print(f"❌ Error generating theme variations with OpenAI: {e}")
         return None
-
