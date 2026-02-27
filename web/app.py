@@ -467,17 +467,20 @@ async def process_banner_generation(job_id: str, request: BannerGenerationReques
         # Wait for letters to complete and update progress in real-time
         generated_letter_paths = []
         completed_count = 0
-        
+        letter_errors = []
+
         # Wait for all tasks to complete and collect results
         results = await asyncio.gather(*[task for _, _, task in letter_tasks], return_exceptions=True)
-        
+
         # Process results and update progress
         for (i, letter, _), result in zip(letter_tasks, results):
             try:
                 if isinstance(result, Exception):
-                    print(f"⚠️ Error generating letter '{letter}': {result}")
+                    error_msg = str(result)
+                    print(f"⚠️ Error generating letter '{letter}': {error_msg}")
+                    letter_errors.append(f"'{letter}': {error_msg}")
                     continue
-                
+
                 if result:  # result is the letter_path
                     generated_letter_paths.append(result)
                     completed_count += 1
@@ -487,12 +490,27 @@ async def process_banner_generation(job_id: str, request: BannerGenerationReques
                     print(f"✅ Completed letter '{letter}' ({completed_count}/{len(request.letters)})")
                 else:
                     print(f"⚠️ Failed to generate letter '{letter}'")
+                    letter_errors.append(f"'{letter}': returned no result")
             except Exception as e:
                 print(f"⚠️ Error processing letter '{letter}': {e}")
+                letter_errors.append(f"'{letter}': {e}")
                 continue
-        
+
         if not generated_letter_paths:
-            raise Exception("Failed to generate any letters")
+            # Build a descriptive error message from collected errors
+            if letter_errors:
+                # Extract the common error (strip per-letter prefix to find shared cause)
+                error_reasons = set()
+                for err in letter_errors:
+                    # Each error is like "'H': Gemini API quota exceeded..."
+                    reason = err.split(": ", 1)[1] if ": " in err else err
+                    error_reasons.add(reason)
+                if len(error_reasons) == 1:
+                    raise Exception(error_reasons.pop())
+                else:
+                    raise Exception(f"All letters failed. Errors: {'; '.join(letter_errors)}")
+            else:
+                raise Exception("Failed to generate any letters (no details available)")
         
         job["current_step"] = "Creating banner layout..."
         job["progress"] = 85

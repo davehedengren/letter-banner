@@ -14,6 +14,23 @@ from google.genai import types
 from . import config
 
 
+def _friendly_error(exc):
+    """Extract a short, user-friendly message from a Gemini API exception."""
+    msg = str(exc)
+    if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
+        return "Gemini API quota exceeded — your free tier or billing limit has been reached. Check your plan at https://ai.google.dev/gemini-api/docs/rate-limits"
+    if "401" in msg or "UNAUTHENTICATED" in msg:
+        return "Gemini API key is invalid or expired. Please check your GEMINI_API_KEY."
+    if "403" in msg or "PERMISSION_DENIED" in msg:
+        return "Gemini API key does not have permission for image generation. Check your API key permissions."
+    if "404" in msg or "NOT_FOUND" in msg:
+        return "Gemini model not found. The model 'gemini-3-pro-image-preview' may not be available for your account."
+    if "500" in msg or "INTERNAL" in msg:
+        return "Gemini API internal server error. Please try again later."
+    # Fallback: return first 200 chars
+    return msg[:200] if len(msg) > 200 else msg
+
+
 def generate_stylized_letter_gemini(letter, object_description, output_dir, run_timestamp, color_palette=None):
     """
     Generate a stylized letter inspired by the specified interest using Google Gemini.
@@ -37,7 +54,7 @@ def generate_stylized_letter_gemini(letter, object_description, output_dir, run_
         color_guidance = f" Use this specific color palette: {colors_str}. Style it with {color_palette['mood']}."
     
     # Create prompt for stylized letter based on interest/theme
-    prompt = f"Create ONLY the letter '{letter.upper()}' as a decorative design inspired by {object_description}. The letter should be clearly recognizable as '{letter.upper()}' with artistic decorations, patterns, and motifs that represent {object_description}.{color_guidance} CRITICAL: The background must be completely transparent (alpha channel = 0). Do not include any background colors, shapes, frames, borders, or environmental elements. Only generate the letter itself with decorative elements integrated into the letter shape. The letter should appear to float with no background whatsoever - suitable for cutting out and placing on any surface. Think of it as a sticker or decal of just the letter."
+    prompt = f"Create ONLY the letter '{letter.upper()}' as a decorative design inspired by {object_description}. The letter should be clearly recognizable as '{letter.upper()}' with artistic decorations, patterns, and motifs that represent {object_description}.{color_guidance} CRITICAL: The background MUST be plain solid white (#FFFFFF). No transparency, no checkerboard patterns, no gradients — just a clean white background. Do not include any frames, borders, or environmental elements. Only generate the letter itself with decorative elements integrated into the letter shape."
     
     print(f"Prompt: {prompt}")
     
@@ -109,17 +126,18 @@ def _generate_image_with_retry(prompt, output_dir, letter, object_description, r
                 continue
 
         except Exception as e:
+            last_error = _friendly_error(e)
             print(f"❌ Error generating letter '{letter.upper()}' with Gemini: {e}")
             if retry_attempt < config.MAX_RETRIES_PER_LETTER - 1:
                 print(f"   Will retry in {config.RETRY_DELAY_SECONDS} seconds...")
                 continue
             else:
                 print(f"   Max retries exceeded for letter '{letter.upper()}'")
-                return None
-    
-    # If we get here, all retries failed
+                raise RuntimeError(last_error)
+
+    # If we get here, all retries failed (no image data received)
     print(f"❌ All {config.MAX_RETRIES_PER_LETTER} retry attempts failed for letter '{letter.upper()}'")
-    return None
+    raise RuntimeError("No image data returned by Gemini API after multiple retries")
 
 
 def _save_generated_image(image_bytes, letter, object_description, output_dir, run_timestamp):
@@ -153,20 +171,42 @@ def _save_generated_image(image_bytes, letter, object_description, output_dir, r
     return new_letter_path
 
 
+def _flatten_to_white_background(image):
+    """
+    Ensure the image has a solid white background.
+
+    If Gemini returns RGBA, composite onto white. Otherwise return as-is
+    (the prompt now requests a white background directly).
+    """
+    if image.mode == 'RGBA':
+        white_bg = Image.new('RGB', image.size, (255, 255, 255))
+        white_bg.paste(image, mask=image.split()[3])
+        return white_bg
+    elif image.mode != 'RGB':
+        return image.convert('RGB')
+    return image
+
+
 def _save_gemini_image(image, letter, object_description, output_dir, run_timestamp):
     """Save the Gemini PIL Image with appropriate naming."""
     # Create output directory
     banner_output_dir = os.path.join(output_dir, f"letter_banner_{run_timestamp}")
     os.makedirs(banner_output_dir, exist_ok=True)
-    
+
     # Create filename
     letter_basename = f"letter_{letter.upper()}_{object_description.replace(' ', '_').replace(',', '')}"
     new_letter_name = f"{letter_basename}_{run_timestamp}.png"
     new_letter_path = os.path.join(banner_output_dir, new_letter_name)
-    
-    # Save the image directly - as_image() returns a ready-to-save image object
+
     try:
-        image.save(new_letter_path)
+        # Convert Gemini Image object to PIL Image if needed
+        if not isinstance(image, Image.Image):
+            pil_image = Image.open(BytesIO(image.image_bytes))
+        else:
+            pil_image = image
+        # Flatten checkerboard/transparency to white background for printing
+        pil_image = _flatten_to_white_background(pil_image)
+        pil_image.save(new_letter_path, format="PNG")
         print(f"✅ Letter '{letter.upper()}' saved: {new_letter_name}")
         return new_letter_path
     except Exception as e:

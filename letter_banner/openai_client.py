@@ -37,7 +37,7 @@ def generate_stylized_letter(letter, object_description, output_dir, run_timesta
         color_guidance = f" Use this specific color palette: {colors_str}. Style it with {color_palette['mood']}."
     
     # Create prompt for stylized letter based on interest/theme
-    prompt = f"Create ONLY the letter '{letter.upper()}' as a decorative design inspired by {object_description}. The letter should be clearly recognizable as '{letter.upper()}' with artistic decorations, patterns, and motifs that represent {object_description}.{color_guidance} CRITICAL: The background must be completely transparent (alpha channel = 0). Do not include any background colors, shapes, frames, borders, or environmental elements. Only generate the letter itself with decorative elements integrated into the letter shape. The letter should appear to float with no background whatsoever - suitable for cutting out and placing on any surface. Think of it as a sticker or decal of just the letter."
+    prompt = f"Create ONLY the letter '{letter.upper()}' as a decorative design inspired by {object_description}. The letter should be clearly recognizable as '{letter.upper()}' with artistic decorations, patterns, and motifs that represent {object_description}.{color_guidance} CRITICAL: The background MUST be plain solid white (#FFFFFF). No transparency, no checkerboard patterns, no gradients — just a clean white background. Do not include any frames, borders, or environmental elements. Only generate the letter itself with decorative elements integrated into the letter shape."
     
     print(f"Prompt: {prompt}")
     
@@ -75,12 +75,12 @@ def _generate_image_with_retry(prompt, output_dir, letter, object_description, r
                 prompt=prompt,
                 n=1,
                 size=config.DEFAULT_IMAGE_SIZE,
-                background="transparent",
+                background="white",
                 output_format="png",
                 quality="high"
             )
             
-            print(f"API request sent with background='transparent' for letter '{letter.upper()}'")
+            print(f"API request sent with background='white' for letter '{letter.upper()}'")
 
             if response.data and len(response.data) > 0:
                 # gpt-image-1 returns base64-encoded images directly
